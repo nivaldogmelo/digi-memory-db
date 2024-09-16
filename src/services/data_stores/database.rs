@@ -1,0 +1,41 @@
+use heapless::FnvIndexMap as IndexMap;
+
+use crate::domain::{DataStore, DataStoreError, Key, Value};
+
+pub struct Database {
+    data: IndexMap<Key, Value, 64>,
+}
+
+impl Database {
+    pub fn new() -> Self {
+        Database {
+            data: IndexMap::new(),
+        }
+    }
+}
+
+impl DataStore for Database {
+    fn get(&self, key: &Key) -> Result<Value, DataStoreError> {
+        let got = self.data.get(key);
+        if let Some(value) = got {
+            return Ok(value.clone());
+        }
+
+        Err(DataStoreError::NotFound)
+    }
+
+    fn set(&mut self, key: Key, value: Value) -> Result<(), DataStoreError> {
+        // Check if full //////////////////////////////////////////////////////
+        let got = self.data.insert(key, value);
+        if got.is_err() {
+            return Err(DataStoreError::WriteError);
+        }
+
+        Ok(())
+    }
+
+    fn delete(&mut self, key: &Key) -> Result<(), DataStoreError> {
+        self.data.swap_remove(key);
+        Ok(())
+    }
+}
